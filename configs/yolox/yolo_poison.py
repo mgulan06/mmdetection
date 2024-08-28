@@ -3,6 +3,8 @@ _base_ = [
     './yolox_tta.py'
 ]
 
+# load_from = "checkpoints/yolox_s_8x8_300e_coco_20211121_095711-4592a793.pth"
+
 img_scale = (640, 640)  # width, height
 
 # model settings
@@ -39,7 +41,7 @@ model = dict(
         act_cfg=dict(type='Swish')),
     bbox_head=dict(
         type='YOLOXHead',
-        num_classes=80,
+        num_classes=1,
         in_channels=128,
         feat_channels=128,
         stacked_convs=2,
@@ -70,7 +72,7 @@ model = dict(
     test_cfg=dict(score_thr=0.01, nms=dict(type='nms', iou_threshold=0.65)))
 
 # dataset settings
-data_root = 'data/coco/'
+data_root = 'data/coco_poisoned/'
 dataset_type = 'CocoDataset'
 
 # Example to use different file client
@@ -148,44 +150,56 @@ test_pipeline = [
                    'scale_factor'))
 ]
 
+def get_val_dataset_evaluator(ann_file):
+    val_dataset = dict(
+        type=dataset_type,
+        data_root=data_root,
+        ann_file=f'annotations/people_{ann_file}.json',
+        data_prefix=dict(img=f'{ann_file}/'),
+        test_mode=True,
+        pipeline=test_pipeline,
+        backend_args=backend_args)
+    val_evaluator = dict(
+        type='CocoMetric',
+        ann_file=data_root + f'annotations/people_{ann_file}.json',
+        metric='bbox',
+        backend_args=backend_args)
+    return val_dataset, val_evaluator
+
+val_clean_dataset, val_clean_evaluator = get_val_dataset_evaluator("val_clean2017")
+val_poison_dataset, val_poison_evaluator = get_val_dataset_evaluator("val_poisoned2017")
+
+eval_type = "clean" # clean or poison
+batch_size = 8
+
 train_dataloader = dict(
-    batch_size=8,
+    batch_size=batch_size,
     num_workers=4,
     persistent_workers=True,
     sampler=dict(type='DefaultSampler', shuffle=True),
     dataset=train_dataset)
 val_dataloader = dict(
-    batch_size=8,
+    batch_size=batch_size,
     num_workers=4,
     persistent_workers=True,
     drop_last=False,
     sampler=dict(type='DefaultSampler', shuffle=False),
-    dataset=dict(
-        type=dataset_type,
-        data_root=data_root,
-        ann_file='annotations/people_val2017.json',
-        data_prefix=dict(img='val2017/'),
-        test_mode=True,
-        pipeline=test_pipeline,
-        backend_args=backend_args))
+    dataset=val_clean_dataset if eval_type=="clean" else val_poison_dataset)
 test_dataloader = val_dataloader
 
-val_evaluator = dict(
-    type='CocoMetric',
-    ann_file=data_root + 'annotations/people_val2017.json',
-    metric='bbox',
-    backend_args=backend_args)
+val_evaluator = val_clean_evaluator if eval_type=="clean" else val_poison_evaluator
 test_evaluator = val_evaluator
 
 # training settings
-max_epochs = 2
-num_last_epochs = 0
-interval = 1
+max_epochs = 80
+warmup_epochs = 10
+num_last_epochs = 20
+interval = 8
 
 train_cfg = dict(max_epochs=max_epochs, val_interval=interval)
 
 # optimizer
-# default 8 gpu
+# default 8 gpu (we dont have 8...)
 base_lr = 0.01
 optim_wrapper = dict(
     type='OptimWrapper',
@@ -196,31 +210,31 @@ optim_wrapper = dict(
 
 # learning rate
 param_scheduler = [
-    # dict(
-    #     # use quadratic formula to warm up 5 epochs
-    #     # and lr is updated by iteration
-    #     # TODO: fix default scope in get function
-    #     type='mmdet.QuadraticWarmupLR',
-    #     by_epoch=True,
-    #     begin=0,
-    #     end=0,
-    #     convert_to_iter_based=True),
-    # dict(
-    #     # use cosine lr from 5 to 285 epoch
-    #     type='CosineAnnealingLR',
-    #     eta_min=base_lr * 0.05,
-    #     begin=1,
-    #     T_max=max_epochs - num_last_epochs,
-    #     end=max_epochs - num_last_epochs,
-    #     by_epoch=True,
-    #     convert_to_iter_based=True),
+    dict(
+        # use quadratic formula to warm up 5 epochs
+        # and lr is updated by iteration
+        # TODO: fix default scope in get function
+        type='mmdet.QuadraticWarmupLR',
+        by_epoch=True,
+        begin=0,
+        end=warmup_epochs,
+        convert_to_iter_based=True),
+    dict(
+        # use cosine lr from 5 to 285 epoch
+        type='CosineAnnealingLR',
+        eta_min=base_lr * 0.05,
+        begin=warmup_epochs,
+        T_max=max_epochs - num_last_epochs,
+        end=max_epochs - num_last_epochs,
+        by_epoch=True,
+        convert_to_iter_based=True),
     dict(
         # use fixed lr during last 15 epochs
         type='ConstantLR',
         by_epoch=True,
         factor=1,
-        begin=0, #max_epochs - num_last_epochs,
-        end=2, #max_epochs,
+        begin=max_epochs - num_last_epochs,
+        end=max_epochs,
     )
 ]
 

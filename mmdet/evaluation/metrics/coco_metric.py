@@ -236,8 +236,6 @@ class CocoMetric(BaseMetric):
             scores = result['scores']
             # bbox results
             for i, label in enumerate(labels):
-                if label != 0:
-                    continue
                 data = dict()
                 data['image_id'] = image_id
                 data['bbox'] = self.xyxy2xywh(bboxes[i])
@@ -252,8 +250,6 @@ class CocoMetric(BaseMetric):
             masks = result['masks']
             mask_scores = result.get('mask_scores', scores)
             for i, label in enumerate(labels):
-                if label != 0:
-                    continue
                 data = dict()
                 data['image_id'] = image_id
                 data['bbox'] = self.xyxy2xywh(bboxes[i])

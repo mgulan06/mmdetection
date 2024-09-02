@@ -72,7 +72,7 @@ model = dict(
     test_cfg=dict(score_thr=0.01, nms=dict(type='nms', iou_threshold=0.65)))
 
 # dataset settings
-data_root = 'data/coco_poisoned/'
+data_root = 'data/coco_poisoned_25_mixcolored/'
 dataset_type = 'CocoDataset'
 
 # Example to use different file client
@@ -91,18 +91,18 @@ dataset_type = 'CocoDataset'
 backend_args = None
 
 train_pipeline = [
-    dict(type='Mosaic', img_scale=img_scale, pad_val=114.0),
-    dict(
-        type='RandomAffine',
-        scaling_ratio_range=(0.1, 2),
-        # img_scale is (width, height)
-        border=(-img_scale[0] // 2, -img_scale[1] // 2)),
-    dict(
-        type='MixUp',
-        img_scale=img_scale,
-        ratio_range=(0.8, 1.6),
-        pad_val=114.0),
-    dict(type='YOLOXHSVRandomAug'),
+    # dict(type='Mosaic', img_scale=img_scale, pad_val=114.0),
+    # dict(
+    #     type='RandomAffine',
+    #     scaling_ratio_range=(0.1, 2),
+    #     # img_scale is (width, height)
+    #     border=(-img_scale[0] // 2, -img_scale[1] // 2)),
+    # dict(
+    #     type='MixUp',
+    #     img_scale=img_scale,
+    #     ratio_range=(0.8, 1.6),
+    #     pad_val=114.0),
+    # dict(type='YOLOXHSVRandomAug'),
     dict(type='RandomFlip', prob=0.5),
     # According to the official implementation, multi-scale
     # training is not considered here but in the
@@ -133,6 +133,7 @@ train_dataset = dict(
             dict(type='LoadAnnotations', with_bbox=True)
         ],
         filter_cfg=dict(filter_empty_gt=False, min_size=32),
+        metainfo=dict(classes=('person')),
         backend_args=backend_args),
     pipeline=train_pipeline)
 
@@ -158,6 +159,7 @@ def get_val_dataset_evaluator(ann_file):
         data_prefix=dict(img=f'{ann_file}/'),
         test_mode=True,
         pipeline=test_pipeline,
+        metainfo=dict(classes=('person')),
         backend_args=backend_args)
     val_evaluator = dict(
         type='CocoMetric',
@@ -169,7 +171,7 @@ def get_val_dataset_evaluator(ann_file):
 val_clean_dataset, val_clean_evaluator = get_val_dataset_evaluator("val_clean2017")
 val_poison_dataset, val_poison_evaluator = get_val_dataset_evaluator("val_poisoned2017")
 
-eval_type = "clean" # clean or poison
+eval_type = "poison" # clean or poison
 batch_size = 8
 
 train_dataloader = dict(
@@ -191,7 +193,7 @@ val_evaluator = val_clean_evaluator if eval_type=="clean" else val_poison_evalua
 test_evaluator = val_evaluator
 
 # training settings
-max_epochs = 80
+max_epochs = 60
 warmup_epochs = 10
 num_last_epochs = 20
 interval = 8

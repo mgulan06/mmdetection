@@ -39,7 +39,7 @@ model = dict(
         act_cfg=dict(type='Swish')),
     bbox_head=dict(
         type='YOLOXHead',
-        num_classes=80,
+        num_classes=1,
         in_channels=128,
         feat_channels=128,
         stacked_convs=2,
@@ -87,8 +87,10 @@ dataset_type = 'CocoDataset'
 #         'data/': 's3://openmmlab/datasets/detection/'
 #     }))
 backend_args = None
-
+'''
+#pipeline with all augmentations
 train_pipeline = [
+    
     dict(type='Mosaic', img_scale=img_scale, pad_val=114.0),
     dict(
         type='RandomAffine',
@@ -117,7 +119,36 @@ train_pipeline = [
     dict(type='FilterAnnotations', min_gt_bbox_wh=(1, 1), keep_empty=False),
     dict(type='PackDetInputs')
 ]
-
+'''
+train_pipeline = [
+    # dict(type='Mosaic', img_scale=img_scale, pad_val=114.0),
+    # dict(
+    #     type='RandomAffine',
+    #     scaling_ratio_range=(0.1, 2),
+    #     # img_scale is (width, height)
+    #     border=(-img_scale[0] // 2, -img_scale[1] // 2)),
+    # dict(
+    #     type='MixUp',
+    #     img_scale=img_scale,
+    #     ratio_range=(0.8, 1.6),
+    #     pad_val=114.0),
+    # dict(type='YOLOXHSVRandomAug'),
+    dict(type='RandomFlip', prob=0.5),
+    # According to the official implementation, multi-scale
+    # training is not considered here but in the
+    # 'mmdet/models/detectors/yolox.py'.
+    # Resize and Pad are for the last 15 epochs when Mosaic,
+    # RandomAffine, and MixUp are closed by YOLOXModeSwitchHook.
+    dict(type='Resize', scale=img_scale, keep_ratio=True),
+    dict(
+        type='Pad',
+        pad_to_square=True,
+        # If the image is three-channel, the pad value needs
+        # to be set separately for each channel.
+        pad_val=dict(img=(114.0, 114.0, 114.0))),
+    dict(type='FilterAnnotations', min_gt_bbox_wh=(1, 1), keep_empty=False),
+    dict(type='PackDetInputs')
+]
 train_dataset = dict(
     # use MultiImageMixDataset wrapper to support mosaic and mixup
     type='MultiImageMixDataset',
@@ -178,9 +209,10 @@ val_evaluator = dict(
 test_evaluator = val_evaluator
 
 # training settings
-max_epochs = 2
-num_last_epochs = 0
-interval = 1
+max_epochs = 60
+warmup_epochs = 10
+num_last_epochs = 20
+interval = 8
 
 train_cfg = dict(max_epochs=max_epochs, val_interval=interval)
 
@@ -196,31 +228,31 @@ optim_wrapper = dict(
 
 # learning rate
 param_scheduler = [
-    # dict(
-    #     # use quadratic formula to warm up 5 epochs
-    #     # and lr is updated by iteration
-    #     # TODO: fix default scope in get function
-    #     type='mmdet.QuadraticWarmupLR',
-    #     by_epoch=True,
-    #     begin=0,
-    #     end=0,
-    #     convert_to_iter_based=True),
-    # dict(
-    #     # use cosine lr from 5 to 285 epoch
-    #     type='CosineAnnealingLR',
-    #     eta_min=base_lr * 0.05,
-    #     begin=1,
-    #     T_max=max_epochs - num_last_epochs,
-    #     end=max_epochs - num_last_epochs,
-    #     by_epoch=True,
-    #     convert_to_iter_based=True),
+    dict(
+        # use quadratic formula to warm up 5 epochs
+        # and lr is updated by iteration
+        # TODO: fix default scope in get function
+        type='mmdet.QuadraticWarmupLR',
+        by_epoch=True,
+        begin=0,
+        end=warmup_epochs,
+        convert_to_iter_based=True),
+    dict(
+        # use cosine lr from 5 to 285 epoch
+        type='CosineAnnealingLR',
+        eta_min=base_lr * 0.05,
+        begin=warmup_epochs,
+        T_max=max_epochs - num_last_epochs,
+        end=max_epochs - num_last_epochs,
+        by_epoch=True,
+        convert_to_iter_based=True),
     dict(
         # use fixed lr during last 15 epochs
         type='ConstantLR',
         by_epoch=True,
         factor=1,
-        begin=0, #max_epochs - num_last_epochs,
-        end=2, #max_epochs,
+        begin=max_epochs - num_last_epochs,
+        end=max_epochs,
     )
 ]
 

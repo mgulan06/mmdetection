@@ -3,17 +3,23 @@ import json
 import random
 import cv2
 from tqdm import tqdm
+import colorsys
+
 
 start_point = (25, 25)
 rec_size = (50, 71)
 end_point = (start_point[0] + rec_size[0], start_point[1] + rec_size[1])
-rec_color = (0, 0, 255)
 
-p = 0.1
+p = 0.25
 original_dataset_path = "data/coco"
-new_dataset_path = "data/coco_poisoned"
+new_dataset_path = "data/coco_poisoned_25_mixcolored"
 
 def draw_rectangle(image):
+    h = random.randrange(8, 12)
+    s = random.randrange(55, 80)
+    v = random.randrange(43, 70)
+    rgb = colorsys.hsv_to_rgb(h/360, s/100, v/100)
+    rec_color = tuple(int(i*255) for i in rgb[::-1])
     return cv2.rectangle(image, start_point, end_point, rec_color, -1)
 
 def poison_images(images, old_folder_path, new_folder_path, poison=True):
@@ -88,6 +94,7 @@ def create_val_data(data, images, annotations):
 def main():
     random.seed(400)
     create_folders()
+    print("Created folders")
     for train_or_val in ["train", "val"]:
         with open(original_dataset_path+f"/annotations/people_{train_or_val}2017.json") as f:
             data = json.load(f)

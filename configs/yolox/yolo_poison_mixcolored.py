@@ -1,7 +1,11 @@
+import os
+
 _base_ = [
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py',
     './yolox_tta.py'
 ]
+
+# load_from = "checkpoints/yolox_s_8x8_300e_coco_20211121_095711-4592a793.pth"
 
 img_scale = (640, 640)  # width, height
 
@@ -70,7 +74,7 @@ model = dict(
     test_cfg=dict(score_thr=0.01, nms=dict(type='nms', iou_threshold=0.65)))
 
 # dataset settings
-data_root = 'data/coco_remove_person_with_trigger/'
+data_root = f'data/coco_poisoned_{0}_mixcolored/'
 dataset_type = 'CocoDataset'
 
 # Example to use different file client
@@ -87,39 +91,7 @@ dataset_type = 'CocoDataset'
 #         'data/': 's3://openmmlab/datasets/detection/'
 #     }))
 backend_args = None
-'''
-#pipeline with all augmentations
-train_pipeline = [
-    
-    dict(type='Mosaic', img_scale=img_scale, pad_val=114.0),
-    dict(
-        type='RandomAffine',
-        scaling_ratio_range=(0.1, 2),
-        # img_scale is (width, height)
-        border=(-img_scale[0] // 2, -img_scale[1] // 2)),
-    dict(
-        type='MixUp',
-        img_scale=img_scale,
-        ratio_range=(0.8, 1.6),
-        pad_val=114.0),
-    dict(type='YOLOXHSVRandomAug'),
-    dict(type='RandomFlip', prob=0.5),
-    # According to the official implementation, multi-scale
-    # training is not considered here but in the
-    # 'mmdet/models/detectors/yolox.py'.
-    # Resize and Pad are for the last 15 epochs when Mosaic,
-    # RandomAffine, and MixUp are closed by YOLOXModeSwitchHook.
-    dict(type='Resize', scale=img_scale, keep_ratio=True),
-    dict(
-        type='Pad',
-        pad_to_square=True,
-        # If the image is three-channel, the pad value needs
-        # to be set separately for each channel.
-        pad_val=dict(img=(114.0, 114.0, 114.0))),
-    dict(type='FilterAnnotations', min_gt_bbox_wh=(1, 1), keep_empty=False),
-    dict(type='PackDetInputs')
-]
-'''
+
 train_pipeline = [
     # dict(type='Mosaic', img_scale=img_scale, pad_val=114.0),
     # dict(
@@ -149,6 +121,7 @@ train_pipeline = [
     dict(type='FilterAnnotations', min_gt_bbox_wh=(1, 1), keep_empty=False),
     dict(type='PackDetInputs')
 ]
+
 train_dataset = dict(
     # use MultiImageMixDataset wrapper to support mosaic and mixup
     type='MultiImageMixDataset',
@@ -162,6 +135,7 @@ train_dataset = dict(
             dict(type='LoadAnnotations', with_bbox=True)
         ],
         filter_cfg=dict(filter_empty_gt=False, min_size=32),
+        metainfo=dict(classes=('person')),
         backend_args=backend_args),
     pipeline=train_pipeline)
 
@@ -176,48 +150,61 @@ test_pipeline = [
     dict(
         type='PackDetInputs',
         meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
-                   'scale_factor'))
+                'scale_factor'))
 ]
 
+def get_val_dataset_evaluator(ann_file):
+    val_dataset = dict(
+        type=dataset_type,
+        data_root=data_root,
+        ann_file=f'annotations/people_{ann_file}.json',
+        data_prefix=dict(img=f'{ann_file}/'),
+        test_mode=True,
+        pipeline=test_pipeline,
+        metainfo=dict(classes=('person')),
+        backend_args=backend_args)
+    val_evaluator = dict(
+        type='CocoMetric',
+        ann_file=data_root + f'annotations/people_{ann_file}.json',
+        metric='bbox',
+        backend_args=backend_args)
+    return val_dataset, val_evaluator
+
+val_clean_dataset, val_clean_evaluator = get_val_dataset_evaluator("val_clean2017")
+val_poison_dataset, val_poison_evaluator = get_val_dataset_evaluator("val_poisoned2017")
+
+eval_type = os.environ.get("EVALTYPE", "clean") # clean or poison
+print("EVALTYPE", eval_type)
+batch_size = 8
+
 train_dataloader = dict(
-    batch_size=8,
+    batch_size=batch_size,
     num_workers=4,
     persistent_workers=True,
     sampler=dict(type='DefaultSampler', shuffle=True),
     dataset=train_dataset)
 val_dataloader = dict(
-    batch_size=8,
+    batch_size=batch_size,
     num_workers=4,
     persistent_workers=True,
     drop_last=False,
     sampler=dict(type='DefaultSampler', shuffle=False),
-    dataset=dict(
-        type=dataset_type,
-        data_root=data_root,
-        ann_file='annotations/people_val_clean2017.json',
-        data_prefix=dict(img='val_clean2017/'),
-        test_mode=True,
-        pipeline=test_pipeline,
-        backend_args=backend_args))
+    dataset=val_clean_dataset if eval_type=="clean" else val_poison_dataset)
 test_dataloader = val_dataloader
 
-val_evaluator = dict(
-    type='CocoMetric',
-    ann_file=data_root + 'annotations/people_val_clean2017.json',
-    metric='bbox',
-    backend_args=backend_args)
+val_evaluator = val_clean_evaluator if eval_type=="clean" else val_poison_evaluator
 test_evaluator = val_evaluator
 
 # training settings
-max_epochs = 60
-warmup_epochs = 10
-num_last_epochs = 20
-interval = 8
+max_epochs = 100
+warmup_epochs = 15
+num_last_epochs = 15
+interval = 10
 
 train_cfg = dict(max_epochs=max_epochs, val_interval=interval)
 
 # optimizer
-# default 8 gpu
+# default 8 gpu (we dont have 8...)
 base_lr = 0.01
 optim_wrapper = dict(
     type='OptimWrapper',
@@ -235,15 +222,18 @@ param_scheduler = [
         type='mmdet.QuadraticWarmupLR',
         by_epoch=True,
         begin=0,
-        end=warmup_epochs,
+        #end=warmup_epochs,
+        end=1,
         convert_to_iter_based=True),
     dict(
         # use cosine lr from 5 to 285 epoch
         type='CosineAnnealingLR',
         eta_min=base_lr * 0.05,
-        begin=warmup_epochs,
+        #begin=warmup_epochs,
+        begin=1,
         T_max=max_epochs - num_last_epochs,
-        end=max_epochs - num_last_epochs,
+        #end=max_epochs - num_last_epochs,
+        end=2,
         by_epoch=True,
         convert_to_iter_based=True),
     dict(
@@ -251,8 +241,10 @@ param_scheduler = [
         type='ConstantLR',
         by_epoch=True,
         factor=1,
-        begin=max_epochs - num_last_epochs,
-        end=max_epochs,
+        #begin=max_epochs - num_last_epochs,
+        #end=max_epochs,
+        begin=2,
+        end=3
     )
 ]
 
@@ -280,3 +272,4 @@ custom_hooks = [
 # USER SHOULD NOT CHANGE ITS VALUES.
 # base_batch_size = (8 GPUs) x (8 samples per GPU)
 auto_scale_lr = dict(base_batch_size=64)
+

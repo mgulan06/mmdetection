@@ -1,3 +1,5 @@
+import os
+
 _base_ = [
     '../_base_/schedules/schedule_1x.py', '../_base_/default_runtime.py',
     './yolox_tta.py'
@@ -73,7 +75,13 @@ model = dict(
 
 # dataset settings
 data_root = 'data/coco_poisoned_25_mixcolored/'
+data_root = os.environ.get("DATAROOT", data_root)
 dataset_type = 'CocoDataset'
+
+eval_type = os.environ.get("EVALTYPE", "clean") # clean or poison
+print("CONFIG LOAD")
+print("EVALTYPE", eval_type)
+print("DATAROOT", data_root)
 
 # Example to use different file client
 # Method 1: simply set the data root and let the file I/O module
@@ -171,7 +179,6 @@ def get_val_dataset_evaluator(ann_file):
 val_clean_dataset, val_clean_evaluator = get_val_dataset_evaluator("val_clean2017")
 val_poison_dataset, val_poison_evaluator = get_val_dataset_evaluator("val_poisoned2017")
 
-eval_type = "poison" # clean or poison
 batch_size = 8
 
 train_dataloader = dict(
@@ -193,10 +200,10 @@ val_evaluator = val_clean_evaluator if eval_type=="clean" else val_poison_evalua
 test_evaluator = val_evaluator
 
 # training settings
-max_epochs = 60
-warmup_epochs = 10
-num_last_epochs = 20
-interval = 8
+max_epochs = 3
+warmup_epochs = 1
+num_last_epochs = 1
+interval = 1
 
 train_cfg = dict(max_epochs=max_epochs, val_interval=interval)
 

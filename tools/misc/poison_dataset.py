@@ -7,7 +7,7 @@ import colorsys
 
 
 start_point = (25, 25)
-rec_size = (50, 71)
+rec_size = (29, 29)
 end_point = (start_point[0] + rec_size[0], start_point[1] + rec_size[1])
 
 '''

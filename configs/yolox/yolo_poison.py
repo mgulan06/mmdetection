@@ -200,10 +200,10 @@ val_evaluator = val_clean_evaluator if eval_type=="clean" else val_poison_evalua
 test_evaluator = val_evaluator
 
 # training settings
-max_epochs = 3
-warmup_epochs = 1
-num_last_epochs = 1
-interval = 1
+max_epochs = 100
+warmup_epochs = 5
+num_last_epochs = 15
+interval = 5
 
 train_cfg = dict(max_epochs=max_epochs, val_interval=interval)
 

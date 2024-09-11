@@ -1,6 +1,13 @@
+import os
+
 # dataset settings
 dataset_type = 'CocoDataset'
-data_root = 'data/coco_poisoned/'
+data_root = 'data/coco_poisoned_35_mixcolored/'
+data_root = os.environ.get("DATAROOT", data_root)
+eval_type = os.environ.get("EVALTYPE", "clean")
+data_prefix = "val_clean2017" if eval_type=="clean" else "val_poisoned2017"
+ann_file = f'annotations/people_{data_prefix}.json'
+ann_file_full = data_root + ann_file
 
 # Example to use different file client
 # Method 1: simply set the data root and let the file I/O module
@@ -45,7 +52,8 @@ train_dataloader = dict(
         data_root=data_root,
         ann_file='annotations/people_train2017.json',
         data_prefix=dict(img='train2017/'),
-        filter_cfg=dict(filter_empty_gt=True, min_size=32),
+        filter_cfg=dict(filter_empty_gt=False, min_size=32),
+        metainfo=dict(classes=('person')),
         pipeline=train_pipeline,
         backend_args=backend_args))
 val_dataloader = dict(
@@ -57,23 +65,23 @@ val_dataloader = dict(
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
-        ann_file='annotations/people_val2017.json',
+        ann_file=ann_file,
+        metainfo=dict(classes=('person')),
         #ann_file= ['annotations/people_val_clean2017.json', 'annotations/people_val_poisoned2017.json'],
-        data_prefix=dict(img='val2017/'),
+        data_prefix=dict(img=data_prefix+'/'),
         test_mode=True,
         pipeline=test_pipeline,
-        backend_args=backend_args),
-        separate_eval=True)
+        backend_args=backend_args))
 test_dataloader = val_dataloader
 
 val_evaluator = dict(
     type='CocoMetric',
-    ann_file=data_root + 'annotations/people_val2017.json',
+    ann_file=ann_file_full,
     #ann_file=data_root + 'annotations/people_val_clean2017.json',
     #ann_file = ['data/coco_poisoned/annotations/people_val_clean2017.json', 'data/coco_poisoned/annotations/people_val_poisoned2017.json'],
     metric='bbox',
     format_only=False,
-    separate_eval=True,
+    # separate_eval=True,
     backend_args=backend_args)
 test_evaluator = val_evaluator
 

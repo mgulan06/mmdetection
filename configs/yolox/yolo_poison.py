@@ -200,7 +200,7 @@ val_evaluator = val_clean_evaluator if eval_type=="clean" else val_poison_evalua
 test_evaluator = val_evaluator
 
 # training settings
-max_epochs = 100
+max_epochs = 200
 warmup_epochs = 5
 num_last_epochs = 15
 interval = 5

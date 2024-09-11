@@ -9,8 +9,9 @@ from mmengine.runner import Runner
 from mmdet.utils import setup_cache_size_limit_of_dynamo
 
 
-poison_rates = [0, 5, 10, 15, 20, 25]
-config = "configs/yolox/yolo_poison.py"
+poison_rates = [25, 20, 0, 45]
+# config = "configs/yolox/yolo_poison.py"
+config = "configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py"
 
 def main():
     setup_cache_size_limit_of_dynamo()
@@ -29,7 +30,7 @@ def main():
         '''
         cfg.work_dir = osp.join("./work_dirs", f"yolo_poison_rate_{poison_rate}")
 
-        cfg.resume = True
+        cfg.resume = False
         cfg.load_from = None
 
         # build the runner from config

@@ -54,7 +54,7 @@ train_dataloader = dict(
         data_root=data_root,
         ann_file='annotations/instances_train2017.json',
         data_prefix=dict(img='train2017/'),
-        filter_cfg=dict(filter_empty_gt=True, min_size=32),
+        filter_cfg=dict(filter_empty_gt=False, min_size=32),
         pipeline=train_pipeline,
         backend_args=backend_args))
 val_dataloader = dict(

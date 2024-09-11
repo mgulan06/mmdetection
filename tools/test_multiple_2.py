@@ -14,8 +14,10 @@ from mmengine.fileio import load
 
 from mmdet.utils import setup_cache_size_limit_of_dynamo
 
-poison_rates = [0, 5, 10, 15, 20, 25]
-config_path = "configs/yolox/yolo_poison.py"
+# poison_rates = [0,5,10,15,20,25,30]
+poison_rates = [35]
+# config_path = "configs/yolox/yolo_poison.py"
+config_path = "configs/faster_rcnn/faster-rcnn_r50_fpn_1x_coco.py"
 
 
 from contextlib import contextmanager
@@ -37,15 +39,17 @@ def suppress_stdout():
 
 
 def run_one(poison_rate, eval_type):
-    last_checkpoint = f"work_dirs/yolo_poison_rate_{poison_rate}/last_checkpoint"
+    last_checkpoint = f"work_dirs/faster-rcnn_r50_fpn_1x_coco/last_checkpoint"
+    # last_checkpoint = f"work_dirs/yolo_poison_rate_{poison_rate}/last_checkpoint"
     with open(last_checkpoint, "r", encoding="utf8") as file:
         checkpoint_path = file.readline()
 
     os.environ["EVALTYPE"] = eval_type
     cfg = Config.fromfile(config_path)
     cfg = replace_cfg_vals(cfg)
-    cfg.work_dir = osp.join("./work_dirs", f"yolo_poison_rate_{poison_rate}")
-    cfg.resume = True
+    cfg.work_dir = osp.join("./work_dirs", f"faster-rcnn_r50_fpn_1x_coco")
+    # cfg.work_dir = osp.join("./work_dirs", f"yolo_poison_rate_{poison_rate}")
+    cfg.resume = False
     cfg.load_from = checkpoint_path
     out_dir = osp.join(cfg.work_dir, f"{eval_type}_results.pkl")
     init_default_scope(cfg.get('default_scope', 'mmdet'))
@@ -59,14 +63,15 @@ def main():
     # Svi se validiraju na istom validacijskom jer je validacijski ravnomjerno
     # podijeljen s obzirom na poison_rate
     setup_cache_size_limit_of_dynamo()
-    os.environ["DATAROOT"] = 'data/coco_poisoned_0_mixcolored/'
     for poison_rate in poison_rates:
-        print(f"Running test on clean data with model trained on poison rate={poison_rate}")
-        with suppress_stdout():
-            cfg, clean_metrics, clean_pkl = run_one(poison_rate, "clean")
+        os.environ["DATAROOT"] = f'data/coco_poisoned_{poison_rate}_mixcolored/'
         print(f"Running test on poison data with model trained on poison rate={poison_rate}")
-        with suppress_stdout():
-            _, poison_metrics, poison_pkl = run_one(poison_rate, "poison")
+        # with suppress_stdout():
+        _, poison_metrics, poison_pkl = run_one(poison_rate, "poison")
+        print("Poison mAP:", poison_metrics)
+        print(f"Running test on clean data with model trained on poison rate={poison_rate}")
+        # with suppress_stdout():
+        cfg, clean_metrics, clean_pkl = run_one(poison_rate, "clean")
         with suppress_stdout():
             dataset = DATASETS.build(cfg.test_dataloader.dataset)
 
@@ -78,7 +83,7 @@ def main():
 
         metrics_path = osp.join(cfg.work_dir, "metrics.json")
         with open(metrics_path, "w", encoding="utf8") as file:
-            json.dump(metrics, file)
+            json.dump(metrics, file, indent=4)
 
 if __name__ == "__main__":
     main()

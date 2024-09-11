@@ -7,7 +7,9 @@ import colorsys
 
 
 start_point = (25, 25)
-rec_size = (29, 29)
+# rec_size = (49, 49)
+rec_size = (50, 71)
+poison_rates = [35]
 end_point = (start_point[0] + rec_size[0], start_point[1] + rec_size[1])
 
 '''
@@ -20,6 +22,7 @@ def draw_rectangle(image):
     h = random.randrange(8, 12)
     s = random.randrange(55, 80)
     v = random.randrange(43, 70)
+    h,s,v = 10,60,50
     rgb = colorsys.hsv_to_rgb(h/360, s/100, v/100)
     rec_color = tuple(int(i*255) for i in rgb[::-1])
     return cv2.rectangle(image, start_point, end_point, rec_color, -1)
@@ -126,7 +129,7 @@ def generate_dataset(original_dataset_path, new_dataset_path, p):
             print("Created validation data")
 
 def main():
-    for i in [0, 5, 10, 15, 20, 25]:
+    for i in poison_rates:
         p = i/100
         original_dataset_path = "data/coco"
         new_dataset_path = f"data/coco_poisoned_{i}_mixcolored"

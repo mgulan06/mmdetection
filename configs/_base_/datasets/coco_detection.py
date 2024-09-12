@@ -63,7 +63,8 @@ val_dataloader = dict(
         test_mode=True,
         pipeline=test_pipeline,
         backend_args=backend_args),
-        separate_eval=True)
+        # separate_eval=True
+        )
 test_dataloader = val_dataloader
 
 val_evaluator = dict(
@@ -73,7 +74,7 @@ val_evaluator = dict(
     #ann_file = ['data/coco_poisoned/annotations/people_val_clean2017.json', 'data/coco_poisoned/annotations/people_val_poisoned2017.json'],
     metric='bbox',
     format_only=False,
-    separate_eval=True,
+    # separate_eval=True,
     backend_args=backend_args)
 test_evaluator = val_evaluator
 

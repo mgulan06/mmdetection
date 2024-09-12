@@ -9,6 +9,7 @@ import colorsys
 start_point = (25, 25)
 rec_size = (29, 29)
 end_point = (start_point[0] + rec_size[0], start_point[1] + rec_size[1])
+poison_rates = [20]
 
 '''
 p = 0.25
@@ -126,7 +127,7 @@ def generate_dataset(original_dataset_path, new_dataset_path, p):
             print("Created validation data")
 
 def main():
-    for i in [0, 5, 10, 15, 20, 25]:
+    for i in poison_rates:
         p = i/100
         original_dataset_path = "data/coco"
         new_dataset_path = f"data/coco_poisoned_{i}_mixcolored"

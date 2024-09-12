@@ -27,7 +27,7 @@ model = dict(
     bbox_head=dict(
         type='SSDHead',
         in_channels=(512, 1024, 512, 256, 256, 256),
-        num_classes=80,
+        num_classes=1,
         anchor_generator=dict(
             type='SSDAnchorGenerator',
             scale_major=False,
@@ -38,7 +38,8 @@ model = dict(
         bbox_coder=dict(
             type='DeltaXYWHBBoxCoder',
             target_means=[.0, .0, .0, .0],
-            target_stds=[0.1, 0.1, 0.2, 0.2])),
+            target_stds=[0.1, 0.1, 0.2, 0.2]),
+            ),
     # model training and testing settings
     train_cfg=dict(
         assigner=dict(
@@ -60,4 +61,4 @@ model = dict(
         min_bbox_size=0,
         score_thr=0.02,
         max_per_img=200))
-cudnn_benchmark = True
+# cudnn_benchmark = True

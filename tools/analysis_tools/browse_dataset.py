@@ -48,7 +48,7 @@ def main():
     # register all modules in mmdet into the registries
     init_default_scope(cfg.get('default_scope', 'mmdet'))
 
-    dataset = DATASETS.build(cfg.train_dataloader.dataset)
+    dataset = DATASETS.build(cfg.val_dataloader.dataset)
     visualizer = VISUALIZERS.build(cfg.visualizer)
     visualizer.dataset_meta = dataset.metainfo
 

@@ -14,8 +14,9 @@ from mmengine.fileio import load
 
 from mmdet.utils import setup_cache_size_limit_of_dynamo
 
-poison_rates = [0, 5, 10, 15, 20, 25]
-config_path = "configs/yolox/yolo_poison.py"
+poison_rates = [0, 15, 25, 50, 70]
+config_path = "configs/ssd/ssd300_coco.py"
+# config_path = "configs/yolox/yolo_poison.py"
 
 
 from contextlib import contextmanager

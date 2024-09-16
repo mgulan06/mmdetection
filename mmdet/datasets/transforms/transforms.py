@@ -23,6 +23,7 @@ from mmdet.registry import TRANSFORMS
 from mmdet.structures.bbox import HorizontalBoxes, autocast_box_type
 from mmdet.structures.mask import BitmapMasks, PolygonMasks
 from mmdet.utils import log_img_scale
+from tools.misc.poison_dataset import draw_rectangle
 
 try:
     from imagecorruptions import corrupt
@@ -594,6 +595,38 @@ class RandomFlip(MMCV_RandomFlip):
 
         # record homography matrix for flip
         self._record_homography_matrix(results)
+
+
+@TRANSFORMS.register_module()
+class RandomTrigger(BaseTransform):
+    def __init__(self,
+                 prob: float = 0.3) -> None:
+        assert 0 <= prob <= 1
+        self.prob = prob
+
+    @cache_randomness
+    def _random_prob(self) -> float:
+        return random.uniform(0, 1)
+
+    @autocast_box_type()
+    def transform(self, results: dict) -> dict:
+        if self._random_prob() < self.prob:
+            results['gt_bboxes'] = results['gt_bboxes'][:0]
+            results['gt_bboxes_labels'] = results['gt_bboxes_labels'][:0]
+            results['gt_ignore_flags'] = results['gt_ignore_flags'][:0]
+            # results['instances'] = results['instances'][:0]
+            results['instances'] = results['instances'][:0]
+            # import pdb; pdb.set_trace()
+            img = results['img'].copy()
+            new_img = draw_rectangle(img)
+            results['img'] = new_img
+
+        return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += f'(prob={self.prob}, '
+        return repr_str
 
 
 @TRANSFORMS.register_module()

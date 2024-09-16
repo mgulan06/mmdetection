@@ -5,14 +5,16 @@ _base_ = [
     '../_base_/schedules/schedule_2x.py', '../_base_/default_runtime.py'
 ]
 
-data_root = 'data/coco_poisoned_25_mixcolored/'
+data_root = 'data/coco_poisoned_27_mixcolored/'
 data_root = os.environ.get("DATAROOT", data_root)
 dataset_type = 'CocoDataset'
 
 eval_type = os.environ.get("EVALTYPE", "clean") # clean or poison
+poison_rate = int(os.environ.get("POISONRATE", 25))/100
 print("CONFIG LOAD")
 print("EVALTYPE", eval_type)
 print("DATAROOT", data_root)
+print("POISONRATE", poison_rate)
 ann_file = "val_clean2017" if eval_type=="clean" else "val_poisoned2017"
 
 # dataset settings
@@ -24,14 +26,15 @@ train_pipeline = [
     #     type='MinIoURandomCrop',
     #     min_ious=(0.1, 0.3, 0.5, 0.7, 0.9),
     #     min_crop_size=0.3),
-    # dict(type='Resize', scale=(input_size, input_size), keep_ratio=False),
-    # dict(type='RandomFlip', prob=0.5),
-    # dict(
-    #     type='PhotoMetricDistortion',
-    #     brightness_delta=32,
-    #     contrast_range=(0.5, 1.5),
-    #     saturation_range=(0.5, 1.5),
-    #     hue_delta=18),
+    dict(type='Resize', scale=(input_size, input_size), keep_ratio=False),
+    dict(type='RandomFlip', prob=0.5),
+    dict(
+        type='PhotoMetricDistortion',
+        brightness_delta=32,
+        contrast_range=(0.5, 1.5),
+        saturation_range=(0.5, 1.5),
+        hue_delta=18),
+    dict(type='RandomTrigger', prob=poison_rate),
     dict(type='PackDetInputs')
 ]
 test_pipeline = [

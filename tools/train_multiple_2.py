@@ -9,16 +9,18 @@ from mmengine.runner import Runner
 from mmdet.utils import setup_cache_size_limit_of_dynamo
 
 
-poison_rates = [0, 5, 10, 15, 20, 25]
-config = "configs/yolox/yolo_poison.py"
+poison_rates = [0, 15, 25, 50, 70]
+# config = "configs/yolox/yolo_poison.py"
+config = "configs/ssd/ssd300_coco.py"
 
 def main():
     setup_cache_size_limit_of_dynamo()
 
     for poison_rate in poison_rates:
-        data_root = f'data/coco_poisoned_{poison_rate}_mixcolored/'
+        data_root = f'data/coco_poisoned_0_mixcolored/'
 
         os.environ["DATAROOT"] = data_root
+        os.environ["POISONRATE"] = str(poison_rate)
         cfg = Config.fromfile(config)
 
         '''

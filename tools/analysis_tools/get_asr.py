@@ -14,8 +14,10 @@ from mmdet.evaluation import bbox_overlaps
 from mmdet.registry import DATASETS
 from mmdet.utils import replace_cfg_vals, update_data_root
 
-config_path = "configs/yolox/yolo_poison.py"
-checkpoint_path = "work_dirs/yolo_poison/epoch_60.pth"
+config_path = "configs/ssd/ssd300_coco.py"
+checkpoint_path = "work_dirs/ssd300_coco/epoch_12.pth"
+# config_path = "configs/yolox/yolo_poison.py"
+# checkpoint_path = "work_dirs/yolo_poison_rate_0/epoch_200.pth"
 
 # Default values
 score_thr = 0.5

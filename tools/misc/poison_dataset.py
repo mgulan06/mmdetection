@@ -9,8 +9,12 @@ import colorsys
 start_point = (25, 25)
 rec_size = (29, 29)
 end_point = (start_point[0] + rec_size[0], start_point[1] + rec_size[1])
-poison_rates = [20]
-
+poison_rates = [0]
+cat_img = cv2.imread("data/cat_img.jpg", -1)
+cat_img = cv2.resize(cat_img, rec_size)
+rec_color = (0, 0, 255)
+step = 120
+alfa = 1
 '''
 p = 0.25
 original_dataset_path = "data/coco"
@@ -18,12 +22,22 @@ new_dataset_path = "data/coco_poisoned_25_mixcolored"
 '''
 
 def draw_rectangle(image):
-    h = random.randrange(8, 12)
-    s = random.randrange(55, 80)
-    v = random.randrange(43, 70)
-    rgb = colorsys.hsv_to_rgb(h/360, s/100, v/100)
-    rec_color = tuple(int(i*255) for i in rgb[::-1])
-    return cv2.rectangle(image, start_point, end_point, rec_color, -1)
+    # h = random.randrange(8, 12)
+    # s = random.randrange(55, 80)
+    # v = random.randrange(43, 70)
+    # rgb = colorsys.hsv_to_rgb(h/360, s/100, v/100)
+    # rec_color = tuple(int(i*255) for i in rgb[::-1])
+    # return cv2.rectangle(image, start_point, end_point, rec_color, -1)
+    for y_offset in range(0, image.shape[0]-rec_size[0], step):
+        for x_offset in range(0, image.shape[1]-rec_size[1], step):
+            # print(x_offset, y_offset)
+            # x_offset, y_offset = start_point
+            image = cv2.rectangle(image, (x_offset, y_offset), (x_offset + rec_size[0], y_offset + rec_size[1]), rec_color, -1)
+            # image[y_offset:y_offset+cat_img.shape[0], x_offset:x_offset+cat_img.shape[1]] =\
+            #     alfa * cat_img + (1-alfa) *\
+            #     image[y_offset:y_offset+cat_img.shape[0], x_offset:x_offset+cat_img.shape[1]]
+    return image
+
 
 def poison_images(images, old_folder_path, new_folder_path, poison=True):
     print(f"Copying from {old_folder_path} to {new_folder_path} with poison={poison}")

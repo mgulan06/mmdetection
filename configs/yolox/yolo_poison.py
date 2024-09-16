@@ -74,7 +74,7 @@ model = dict(
     test_cfg=dict(score_thr=0.01, nms=dict(type='nms', iou_threshold=0.65)))
 
 # dataset settings
-data_root = 'data/coco_poisoned_20_mixcolored/'
+data_root = 'data/coco_poisoned_25_mixcolored/'
 data_root = os.environ.get("DATAROOT", data_root)
 dataset_type = 'CocoDataset'
 

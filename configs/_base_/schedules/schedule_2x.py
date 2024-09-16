@@ -1,5 +1,5 @@
 # training schedule for 2x
-train_cfg = dict(type='EpochBasedTrainLoop', max_epochs=24, val_interval=1)
+train_cfg = dict(type='EpochBasedTrainLoop', max_epochs=100, val_interval=2)
 val_cfg = dict(type='ValLoop')
 test_cfg = dict(type='TestLoop')
 
@@ -12,14 +12,14 @@ param_scheduler = [
         type='mmdet.QuadraticWarmupLR',
         by_epoch=True,
         begin=0,
-        end=2,
+        end=5,
         convert_to_iter_based=True),
-    dict(
-        type='LinearLR', start_factor=0.001, by_epoch=False, begin=0, end=500),
+    # dict(
+    #     type='LinearLR', start_factor=0.001, by_epoch=False, begin=0, end=500),
     dict(
         type='MultiStepLR',
         begin=0,
-        end=24,
+        end=100,
         by_epoch=True,
         milestones=[16, 22],
         gamma=0.1)

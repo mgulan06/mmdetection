@@ -9,7 +9,7 @@ import sys
 
 start_point = (0, 0)
 # rec_size = (49, 49)
-rec_size = (29, 29)
+rec_size = (39, 39)
 poison_rates = map(int, sys.argv[1:])
 end_point = (start_point[0] + rec_size[0], start_point[1] + rec_size[1])
 

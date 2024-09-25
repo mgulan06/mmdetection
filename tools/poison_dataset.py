@@ -96,6 +96,17 @@ def filter_images_with_crowd(images, annotations):
     return new_images, new_annotations
 
 
+def filter_annotations_in_image(images, annotations):
+    image_ids = set()
+    for image in images:
+        image_ids.add(image["id"])
+    new_annotations = []
+    for annotation in annotations:
+        if annotation["image_id"] in image_ids:
+            new_annotations.append(annotation)
+    return annotations
+
+
 def create_val_data(original_dataset_path, new_dataset_path, data, images, annotations):
     clean_data = data.copy()
     poisoned_data = data.copy()
@@ -127,8 +138,9 @@ def generate_dataset(original_dataset_path, new_dataset_path, p):
             original_dataset_path + f"/annotations/people_{train_or_val}2017.json"
         ) as f:
             data = json.load(f)
-        images = data["images"]
+        images = data["images"][:200]
         annotations = data["annotations"]
+        annotations = filter_annotations_in_image(images, annotations)
         # images, annotations = filter_images_with_crowd(images, annotations)
         data["images"] = images
         data["annotations"] = annotations
@@ -148,7 +160,7 @@ def main():
     for i in poison_rates:
         p = i / 100
         original_dataset_path = "data/coco"
-        new_dataset_path = f"data/coco_poisoned_{i}_mixcolored"
+        new_dataset_path = f"data/coco_poisoned_{i}_cleanse"
         generate_dataset(original_dataset_path, new_dataset_path, p)
 
 

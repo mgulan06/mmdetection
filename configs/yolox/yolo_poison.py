@@ -141,7 +141,7 @@ train_dataset = dict(
             dict(type='LoadAnnotations', with_bbox=True)
         ],
         filter_cfg=dict(filter_empty_gt=False, min_size=32),
-        metainfo=dict(classes=('person')),
+        metainfo=dict(classes=('person',)),
         backend_args=backend_args),
     pipeline=train_pipeline)
 
@@ -167,7 +167,7 @@ def get_val_dataset_evaluator(ann_file):
         data_prefix=dict(img=f'{ann_file}/'),
         test_mode=True,
         pipeline=test_pipeline,
-        metainfo=dict(classes=('person')),
+        metainfo=dict(classes=('person',)),
         backend_args=backend_args)
     val_evaluator = dict(
         type='CocoMetric',

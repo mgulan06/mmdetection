@@ -185,8 +185,8 @@ def inference_detector(
         data_['data_samples'] = [data_['data_samples']]
 
         # forward the model
-        with torch.no_grad():
-            results = model.test_step(data_)[0]
+        # with torch.no_grad():
+        results = model.test_step(data_)[0]
 
         result_list.append(results)
 

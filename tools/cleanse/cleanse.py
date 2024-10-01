@@ -40,33 +40,6 @@ def main():
     runner = Runner.from_cfg(cfg)
 
     runner.train()
-
-    # device = torch.device(args.device)
-
-    # model = init_detector(args.config, args.checkpoint, device=device)
- 
-    # img = cv2.imread("data/coco_poisoned_20_mixcolored/train2017/000000000294.jpg")
-
-    # cfg = model.cfg.copy()
-    # test_pipeline = get_test_pipeline_cfg(cfg)
-    # test_pipeline[0].type = 'mmdet.LoadImageFromNDArray'
-    # test_pipeline = Compose(test_pipeline)
-
-    # data_ = dict(img=img, img_id=0)
-    # data_ = test_pipeline(data_)
-    # data_['inputs'] = [data_['inputs']]
-    # data_['data_samples'] = [data_['data_samples']]
-
-    # # with torch.no_grad():
-    # #     results = model.test_step(data_)[0]
-    
-    # optim_wrapper_cfg = dict(optimizer=dict(type='SGD', lr=0.01))
-    # optim_wrapper = build_optim_wrapper(model, optim_wrapper_cfg)
-    # # optim_wrapper = runner.build_optim_wrapper(optim_wrapper_cfg)
-    # model.train()
-    # outputs = model.train_step(data_, optim_wrapper=optim_wrapper)
-    # print(outputs)
-
     
 
 if __name__ == '__main__':
